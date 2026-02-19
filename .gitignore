@@ -1,0 +1,18 @@
+# --- Streamlit Secrets ---
+.streamlit/secrets.toml
+
+# --- Local Data ---
+# Exclude the actual product images and CSV to keep the repo light
+product_images/
+inventory.csv
+
+# --- Python Environment ---
+# Exclude virtual environments and cache
+venv/
+.env
+__pycache__/
+*.py[cod]
+
+# --- OS Specific ---
+.DS_Store
+Thumbs.db

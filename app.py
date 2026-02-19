@@ -5,9 +5,16 @@ from PIL import Image
 
 # --- CONFIG & STYLING ---
 st.set_page_config(page_title="Quick Catalog", layout="wide")
+ADMIN_PASSWORD = st.secrets["password"]
 
 CSV_FILE = 'inventory.csv'
 IMG_DIR = 'product_images'
+
+# Initialize Session States
+if 'logged_in' not in st.session_state:
+    st.session_state['logged_in'] = False
+if 'viewing_login' not in st.session_state:
+    st.session_state['viewing_login'] = False
 
 # Initialize CSV if it doesn't exist
 if not os.path.exists(CSV_FILE):
@@ -65,12 +72,51 @@ def process_image(uploaded_file, product_name):
     new_img.save(path, "JPEG", quality=85, optimize=True)
     return path
 
-# --- UI ---
+# ---- UI ----
 st.sidebar.title("Mayur Electronics")
-menu = st.sidebar.radio("Go to", ["View Catalog", "Manage Inventory"])
 
-if menu == "View Catalog":
-    st.title("Live Catalog")
+# --- DYNAMIC SIDEBAR ---
+# If logged in, they see both options. If not, only the Catalog.
+menu_options = ["View Catalog"]
+if st.session_state['logged_in']:
+    menu_options.append("Manage Inventory")
+
+menu = st.sidebar.radio("Go to", menu_options)
+st.sidebar.divider()
+
+# Login/Logout Toggle
+if not st.session_state['logged_in']:
+    if st.sidebar.button("Admin Access"):
+        st.session_state['viewing_login'] = True
+        st.rerun()
+else:
+    if st.sidebar.button("Log Out"):
+        st.session_state['logged_in'] = False
+        st.session_state['viewing_login'] = False
+        st.rerun()
+
+# --- PAGE LOGIC ---
+
+# SHOW LOGIN FORM
+if st.session_state['viewing_login'] and not st.session_state['logged_in']:
+    st.title("Admin Login")
+    with st.form("login_form"):
+        pwd = st.text_input("Password", type="password")
+        if st.form_submit_button("Submit"):
+            if pwd == ADMIN_PASSWORD:
+                st.session_state['logged_in'] = True
+                st.session_state['viewing_login'] = False
+                st.success("Access Granted!")
+                st.rerun()
+            else:
+                st.error("Invalid Password")
+    if st.button("Cancel"):
+        st.session_state['viewing_login'] = False
+        st.rerun()
+
+# Public Catalog page
+elif menu == "View Catalog":
+    st.title("Shop Catalog")
     df = get_data()
     
     if df.empty:
@@ -93,8 +139,8 @@ if menu == "View Catalog":
                     st.error("Out of Stock")
                 
                 st.markdown("---")
-
-else:
+# PRIVATE Manage inventory
+elif menu == "Manage Inventory" and st.session_state['logged_in']:
     st.title("Inventory Manager")
     df = get_data()
     
